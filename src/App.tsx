@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getArtworks } from "./api/artworks";
+import type { FormEvent } from "react";
 import ArtworkImage from "./components/ArtworkImage";
 import type { ArtworksResponse } from "./types/artwork";
 import { useSearchParams } from "react-router-dom";
@@ -9,6 +10,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [retryCount, setRetryCount] = useState(0);
+  const query = searchParams.get("q") ?? "";
+  const [searchText, setSearchText] = useState(query);
   const rawPage = searchParams.get("page");
   const parsedPage = Number(rawPage ?? 1);
   const isValidPage = Number.isInteger(parsedPage) && parsedPage >= 1;
@@ -18,6 +21,24 @@ export default function App() {
     nextParams.set("page", String(nextPage));
     setSearchParams(nextParams);
   }
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedQuery = searchText.trim();
+    const nextParams = new URLSearchParams(searchParams);
+    if (trimmedQuery === "") {
+      nextParams.delete("q");
+    } else {
+      nextParams.set("q", trimmedQuery);
+    }
+    nextParams.set("page", "1");
+    setSearchParams(nextParams);
+  }
+  useEffect(
+    function () {
+      setSearchText(query);
+    },
+    [query],
+  );
   useEffect(
     function () {
       const controller = new AbortController();
@@ -25,7 +46,7 @@ export default function App() {
         setLoading(true);
         setError(null);
         try {
-          const data = await getArtworks(page, controller.signal);
+          const data = await getArtworks(page, query, controller.signal);
           if (!controller.signal.aborted) {
             setResult(data);
           }
@@ -45,7 +66,7 @@ export default function App() {
       loadArtworks();
       return () => controller.abort();
     },
-    [page, retryCount],
+    [page, query, retryCount],
   );
   if (loading) {
     return <p>Loading artworks...</p>;
@@ -54,7 +75,9 @@ export default function App() {
     return (
       <div>
         <p>{error}</p>
-        <button type="button" onClick={()=>setRetryCount(retryCount+1)}>Retry</button>
+        <button type="button" onClick={() => setRetryCount(retryCount + 1)}>
+          Retry
+        </button>
       </div>
     );
   }
@@ -64,6 +87,18 @@ export default function App() {
   return (
     <main>
       <h1>Art Gallery Browser</h1>
+      <form onSubmit={handleSearch}>
+        <label>
+          Search artworks
+          <input
+            type="search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.currentTarget.value)}
+          />
+        </label>
+        <button type="submit">Search</button>
+      </form>
+      {result.data.length === 0 && <p>No artworks found.</p>}
       <p>Loaded artworks: {result.data.length}</p>
       <p>Page: {page}</p>
       <button

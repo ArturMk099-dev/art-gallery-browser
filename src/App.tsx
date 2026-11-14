@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getArtworks } from "./api/artworks";
 import type { FormEvent } from "react";
 import ArtworkImage from "./components/ArtworkImage";
+import { getDepartments } from "./api/departments";
+import type { Department } from "./types/department";
 import type { ArtworksResponse } from "./types/artwork";
 import { useSearchParams } from "react-router-dom";
 export default function App() {
@@ -11,7 +13,12 @@ export default function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [retryCount, setRetryCount] = useState(0);
   const query = searchParams.get("q") ?? "";
+  const departmentId = searchParams.get("department") ?? "";
   const [searchText, setSearchText] = useState(query);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState<boolean>(true);
+  const [departmentsError, setDepartmentsError] = useState<string | null>(null);
+  const [departmentsRetryCount, setDepartmentsRetryCount] = useState(0);
   const rawPage = searchParams.get("page");
   const parsedPage = Number(rawPage ?? 1);
   const isValidPage = Number.isInteger(parsedPage) && parsedPage >= 1;
@@ -19,6 +26,13 @@ export default function App() {
   function changePage(nextPage: number) {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(nextPage));
+    setSearchParams(nextParams);
+  }
+  function changeDepartment(nextDepartmentId: string) {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextDepartmentId === "") nextParams.delete("department");
+    else nextParams.set("department", nextDepartmentId);
+    nextParams.set("page", "1");
     setSearchParams(nextParams);
   }
   function handleSearch(event: FormEvent<HTMLFormElement>) {
@@ -46,7 +60,12 @@ export default function App() {
         setLoading(true);
         setError(null);
         try {
-          const data = await getArtworks(page, query, controller.signal);
+          const data = await getArtworks(
+            page,
+            query,
+            departmentId,
+            controller.signal,
+          );
           if (!controller.signal.aborted) {
             setResult(data);
           }
@@ -66,7 +85,29 @@ export default function App() {
       loadArtworks();
       return () => controller.abort();
     },
-    [page, query, retryCount],
+    [page, query, retryCount, departmentId],
+  );
+  useEffect(
+    function () {
+      const controller = new AbortController();
+      async function loadDepartments() {
+        setDepartmentsLoading(true);
+        setDepartmentsError(null);
+        try {
+          const data = await getDepartments(controller.signal);
+          if (!controller.signal.aborted) setDepartments(data.data);
+        } catch (error) {
+          if (controller.signal.aborted) return;
+          if (error instanceof Error) setDepartmentsError(error.message);
+          else setDepartmentsError("Failed to load departments");
+        } finally {
+          if (!controller.signal.aborted) setDepartmentsLoading(false);
+        }
+      }
+      loadDepartments();
+      return () => controller.abort();
+    },
+    [departmentsRetryCount],
   );
   if (loading) {
     return <p>Loading artworks...</p>;
@@ -98,6 +139,33 @@ export default function App() {
         </label>
         <button type="submit">Search</button>
       </form>
+      <label>
+        Department
+        <select
+          value={departmentId}
+          onChange={(event) => changeDepartment(event.currentTarget.value)}
+          disabled={departmentsLoading || departmentsError !== null}
+        >
+          <option value="">All departments</option>
+          {departments.map((department) => (
+            <option key={department.id} value={department.id}>
+              {department.title}
+            </option>
+          ))}
+        </select>
+      </label>
+      {departmentsLoading && <p>Loading departments...</p>}
+      {departmentsError !== null && (
+        <div>
+          <p>{departmentsError}</p>
+          <button
+            type="button"
+            onClick={() => setDepartmentsRetryCount(departmentsRetryCount + 1)}
+          >
+            Retry departments
+          </button>
+        </div>
+      )}
       {result.data.length === 0 && <p>No artworks found.</p>}
       <p>Loaded artworks: {result.data.length}</p>
       <p>Page: {page}</p>

@@ -38,7 +38,12 @@ export default function ArtworkPage() {
     return () => controller.abort();
   }, [artworkId, isValidId, retryCount]);
   if (loading) {
-    return <p>Loading artwork...</p>;
+    return (
+      <div>
+        <p>Loading artwork...</p>
+        <Link to={"/" + location.search}>Back to gallery</Link>
+      </div>
+    );
   }
   if (error !== null) {
     return (
@@ -47,13 +52,25 @@ export default function ArtworkPage() {
         <button type="button" onClick={() => setRetryCount(retryCount + 1)}>
           Retry
         </button>
+        <Link to={"/" + location.search}>Back to gallery</Link>
       </div>
     );
   }
   if (result === null) {
-    return <p>Artwork not found.</p>;
+    return (
+      <div>
+        <p>Artwork not found.</p>
+        <Link to={"/" + location.search}>Back to gallery</Link>
+      </div>
+    );
   }
   const artwork = result.data;
+  const parser = new DOMParser();
+  const descriptionDocument = parser.parseFromString(
+    artwork.description ?? "",
+    "text/html",
+  );
+  const descriptionText = (descriptionDocument.body.textContent ?? "").trim();
   const iiifPath = new URL(result.config.iiif_url).pathname;
   const imageSrc =
     artwork.image_id === null
@@ -78,6 +95,12 @@ export default function ArtworkPage() {
       <p>On view: {artwork.is_on_view ? "Yes" : "No"}</p>
       {artwork.is_on_view && (
         <p>Gallery: {artwork.gallery_title ?? "Not available"}</p>
+      )}
+      {descriptionText !== "" && (
+        <section>
+          <h2>Description</h2>
+          <p>{descriptionText}</p>
+        </section>
       )}
     </main>
   );

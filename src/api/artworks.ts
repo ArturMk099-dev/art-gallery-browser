@@ -1,4 +1,7 @@
-import type { ArtworksResponse } from "../types/artwork";
+import type {
+  ArtworksResponse,
+  ArtworkDetailsResponse,
+} from "../types/artwork";
 export async function getArtworks(
   page: number,
   query: string,
@@ -39,5 +42,20 @@ export async function getArtworks(
     throw new Error("Failed to load artworks");
   }
   const result: ArtworksResponse = await response.json();
+  return result;
+}
+export async function getArtwork(id: number, signal?: AbortSignal) {
+  const url = new URL("https://api.artic.edu/api/v1/artworks/" + id);
+  url.searchParams.set(
+    "fields",
+    "id,title,artist_display,date_display,image_id,department_title,medium_display,dimensions,place_of_origin,credit_line,is_on_view,gallery_title,description",
+  );
+  const response = await fetch(url, {
+    referrerPolicy: "no-referrer",
+    signal: signal,
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("Failed to load artwork");
+  const result: ArtworkDetailsResponse = await response.json();
   return result;
 }

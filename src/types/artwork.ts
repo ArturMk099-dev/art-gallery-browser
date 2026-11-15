@@ -15,3 +15,20 @@ export interface ArtworksResponse {
     iiif_url: string;
   };
 }
+export interface ArtworkDetails extends Artwork {
+  department_title: string | null;
+  medium_display: string | null;
+  dimensions: string | null;
+  place_of_origin: string | null;
+  credit_line: string | null;
+  gallery_title: string | null;
+  description: string | null;
+  is_on_view: boolean;
+}
+
+export interface ArtworkDetailsResponse {
+  data: ArtworkDetails;
+  config: {
+    iiif_url: string;
+  };
+}

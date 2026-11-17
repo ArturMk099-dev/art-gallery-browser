@@ -4,7 +4,7 @@ A React and TypeScript application for exploring artworks from the Art Institute
 
 ## Live demo
 
-Deployment pending. The custom-domain URL will be added after deployment.
+https://artgalleryartur.cyou/
 
 ## Features
 
@@ -155,8 +155,6 @@ The repository is configured for Vercel:
 - The application fallback serves `index.html` for client-side routes, including artwork detail URLs opened directly.
 
 The image function requires a server runtime. Uploading only the `dist` directory to static hosting does not include it.
-
-After deployment, verify image loading and direct navigation to an artwork page, then connect the custom domain and add its HTTPS URL to the Live demo section.
 
 ## Data source
 

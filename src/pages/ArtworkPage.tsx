@@ -77,12 +77,12 @@ export default function ArtworkPage() {
       ? null
       : iiifPath + "/" + artwork.image_id + "/full/843,/0/default.jpg";
   return (
-    <main>
+    <main className="artwork-page">
       <Link to={"/" + location.search}>Back to gallery</Link>
       {imageSrc !== null ? (
         <ArtworkImage src={imageSrc} alt={artwork.title ?? "Untitled"} />
       ) : (
-        <p>No image available</p>
+        <p className="image-placeholder">No image available</p>
       )}
       <h1>{artwork.title ?? "Untitled"}</h1>
       <p>{artwork.artist_display ?? "Unknown artist"}</p>

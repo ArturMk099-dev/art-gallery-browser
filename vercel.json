@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/iiif/2/:id/full/:size/0/default.jpg", "destination": "/api/image?id=:id&size=:size" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

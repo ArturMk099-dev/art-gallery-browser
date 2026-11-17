@@ -6,7 +6,9 @@ export interface ArtworkImageProps {
 }
 export default function ArtworkImage(props: ArtworkImageProps) {
   const [hasError, setHasError] = useState(false);
-  if (hasError) return <p>No image available</p>;
+  if (hasError) {
+    return <p className="image-placeholder">No image available</p>;
+  }
   return (
     <img
       src={props.src}

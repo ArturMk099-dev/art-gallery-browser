@@ -15,6 +15,7 @@ export default function GalleryPage() {
   const [retryCount, setRetryCount] = useState(0);
   const query = searchParams.get("q") ?? "";
   const departmentId = searchParams.get("department") ?? "";
+  const maxAllowedPage = query !== "" || departmentId !== "" ? 50 : Infinity;
   const [searchText, setSearchText] = useState(query);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [departmentsLoading, setDepartmentsLoading] = useState<boolean>(true);
@@ -22,7 +23,10 @@ export default function GalleryPage() {
   const [departmentsRetryCount, setDepartmentsRetryCount] = useState(0);
   const rawPage = searchParams.get("page");
   const parsedPage = Number(rawPage ?? 1);
-  const isValidPage = Number.isInteger(parsedPage) && parsedPage >= 1;
+  const isValidPage =
+    Number.isSafeInteger(parsedPage) &&
+    parsedPage >= 1 &&
+    parsedPage <= maxAllowedPage;
   const page = isValidPage ? parsedPage : 1;
   function changePage(nextPage: number) {
     const nextParams = new URLSearchParams(searchParams);
@@ -126,8 +130,9 @@ export default function GalleryPage() {
   if (result === null) {
     return <p>No artwork data available.</p>;
   }
+  const totalPages = Math.min(result.pagination.total_pages, maxAllowedPage);
   return (
-    <main>
+    <main className="gallery-page">
       <h1>Art Gallery Browser</h1>
       <form onSubmit={handleSearch}>
         <label>
@@ -167,9 +172,23 @@ export default function GalleryPage() {
           </button>
         </div>
       )}
-      {result.data.length === 0 && <p>No artworks found.</p>}
+      {result.data.length === 0 && (
+        <div>
+          <p>No artworks found.</p>
+          {page > 1 && (
+            <button type="button" onClick={() => changePage(1)}>
+              Go to first page
+            </button>
+          )}
+        </div>
+      )}
       <p>Loaded artworks: {result.data.length}</p>
       <p>Page: {page}</p>
+      {result.pagination.total_pages > maxAllowedPage && (
+        <p className="results-notice">
+          Showing the first 1,000 matches. Refine your search to narrow the results.
+        </p>
+      )}
       <button
         type="button"
         onClick={() => changePage(page - 1)}
@@ -180,7 +199,7 @@ export default function GalleryPage() {
       <button
         type="button"
         onClick={() => changePage(page + 1)}
-        disabled={page >= result.pagination.total_pages}
+        disabled={page >= totalPages}
       >
         Next Page
       </button>
@@ -199,7 +218,7 @@ export default function GalleryPage() {
                   alt={artwork.title ?? "Untitled"}
                 />
               ) : (
-                <p> No image available</p>
+                <p className="image-placeholder">No image available</p>
               )}
               <h2>{artwork.title ?? "Untitled"}</h2>
               <p>{artwork.artist_display ?? "Unknown artist"}</p>
